@@ -1,40 +1,50 @@
 import asyncio
-import datetime
+from pathlib import Path
 
 import aiofiles
 from aiohttp import web
 
-INTERVAL_SECS = 1
+CHUNK_SIZE = 1024 * 256
 
 
-async def archive(request):
-    raise NotImplementedError
+async def archive(request: web.Request) -> web.StreamResponse:
+    archive_hash = request.match_info["archive_hash"]
+    folder_path = (Path("../test_photos") / archive_hash).resolve()
+
+    proc = await asyncio.create_subprocess_exec(
+        "zip",
+        "-r",
+        "-",
+        ".",
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        cwd=folder_path,
+    )
+
+    response = web.StreamResponse()
+    archive_filename = "photos.zip"
+    response.headers["Content-Type"] = "application/zip"
+    response.headers["Content-Disposition"] = (
+        f'attachment; filename="{archive_filename}"'
+    )
+    await response.prepare(request)
+
+    try:
+        while True:
+            chunk = await proc.stdout.read(CHUNK_SIZE)
+            if not chunk:
+                break
+            await response.write(chunk)
+    finally:
+        await proc.wait()
+
+    return response
 
 
-async def handle_index_page(request):
+async def handle_index_page(request: web.Request) -> web.Response:
     async with aiofiles.open("index.html", mode="r") as index_file:
         index_contents = await index_file.read()
     return web.Response(text=index_contents, content_type="text/html")
-
-
-async def uptime_handler(request):
-    response = web.StreamResponse()
-
-    # Большинство браузеров не отрисовывают частично загруженный контент, только если это не HTML.
-    # Поэтому отправляем клиенту именно HTML, указываем это в Content-Type.
-    response.headers["Content-Type"] = "text/html"
-
-    # Отправляет клиенту HTTP заголовки
-    await response.prepare(request)
-
-    while True:
-        formatted_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        message = f"{formatted_date}<br>"
-
-        # Отправляет клиенту очередную порцию ответа
-        await response.write(message.encode("utf-8"))
-
-        await asyncio.sleep(INTERVAL_SECS)
 
 
 if __name__ == "__main__":
@@ -43,7 +53,6 @@ if __name__ == "__main__":
         [
             web.get("/", handle_index_page),
             web.get("/archive/{archive_hash}/", archive),
-            web.get('/archive/7kna', uptime_handler),
         ]
     )
     web.run_app(app)
