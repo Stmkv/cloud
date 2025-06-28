@@ -19,7 +19,6 @@
       - 2.jpg
 ```
 
-
 ## Как установить
 
 Для работы микросервиса нужен Python версии не ниже 3.6.
@@ -31,7 +30,7 @@ pip install -r requirements.txt
 ## Как запустить
 
 ```bash
-python server.py
+docker compose up -d
 ```
 
 Сервер запустится на порту 8080, чтобы проверить его работу перейдите в браузере на страницу [http://127.0.0.1:8080/](http://127.0.0.1:8080/).
@@ -48,7 +47,3 @@ python server.py
 GET http://host.ru/archive/3bea29ccabbbf64bdebcc055319c5745/
 GET http://host.ru/archive/af1ad8c76fda2e48ea9aed2937e972ea/
 ```
-
-# Цели проекта
-
-Код написан в учебных целях — это урок в курсе по Python и веб-разработке на сайте [Devman](https://dvmn.org).
