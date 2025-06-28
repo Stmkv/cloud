@@ -29,7 +29,7 @@ async def archive(folder_path, out_file):
 
 
 async def main():
-    await archive("photos", "archive.zip")
+    await archive("../test_photos/", "archive.zip")
 
 
 if __name__ == "__main__":
