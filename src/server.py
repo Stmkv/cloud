@@ -37,10 +37,7 @@ async def archive(request: web.Request) -> web.StreamResponse:
     await response.prepare(request)
 
     try:
-        while True:
-            chunk = await proc.stdout.read(CHUNK_SIZE)
-            if not chunk:
-                break
+        while chunk := await proc.stdout.read(CHUNK_SIZE):
             if request.app.args.delay:
                 await asyncio.sleep(1)
             if request.app.args.logging:
@@ -50,8 +47,10 @@ async def archive(request: web.Request) -> web.StreamResponse:
         if request.app.args.logging:
             logger.warning("Download was interrupted")
     except asyncio.CancelledError:
-        proc.kill()
-        await proc.communicate()
+        if proc.returncode is None:
+            proc.kill()
+            await proc.communicate()
+        raise
     except BaseException as ex:
         if request.app.args.logging:
             logger.error(f"Unexpected error: {type(ex).__name__}: {ex}")
