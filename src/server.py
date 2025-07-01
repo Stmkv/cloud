@@ -47,9 +47,6 @@ async def archive(request: web.Request) -> web.StreamResponse:
         if request.app.args.logging:
             logger.warning("Download was interrupted")
     except asyncio.CancelledError:
-        if proc.returncode is None:
-            proc.kill()
-            await proc.communicate()
         raise
     except BaseException as ex:
         if request.app.args.logging:
@@ -57,7 +54,7 @@ async def archive(request: web.Request) -> web.StreamResponse:
     finally:
         if proc.returncode is None:
             proc.kill()
-            await proc.wait()
+            await proc.communicate()
 
     return response
 
